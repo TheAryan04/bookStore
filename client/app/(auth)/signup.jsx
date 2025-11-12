@@ -11,7 +11,7 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { user, isLoading, register } = useAuthStore();
+  const { user, isLoading, register, token } = useAuthStore();
 
   
 
@@ -21,6 +21,9 @@ export default function Signup() {
     const result = await register(username, email, password);
     if (!result.success) Alert.alert("Error", result.error);
   };
+
+  console.log("User:", user);
+  console.log("Token:", token);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
