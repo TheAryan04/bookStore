@@ -41,6 +41,8 @@ export const useAuthStore = create((set) => ({
             set({ token, user });
         } catch (error) {
             console.log("Auth check failed", error);
+        } finally {
+            set({ isCheckingAuth: false });
         }
     },
 
@@ -68,5 +70,11 @@ export const useAuthStore = create((set) => ({
             set({ isLoading: false });
             return { success: false, message: error.message };
         }
+    },
+
+    logout: async () => {
+        await AsyncStorage.removeItem("token");
+        await AsyncStorage.removeItem("user");
+        set({ token: null, user: null });
     },
 }));

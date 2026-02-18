@@ -4,15 +4,13 @@ import { useAuthStore } from "../store/authStore";
 import { useEffect } from "react";
 
 export default function Index() {
-  const { user, token, checkAuth } = useAuthStore((state) => ({
-    user: state.user,
-    token: state.token,
-    checkAuth: state.checkAuth,
-  }));
+  // subscribe ONLY to state (not actions)
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
-    checkAuth();
+    useAuthStore.getState().checkAuth();
   }, []);
+
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
