@@ -1,1 +1,1 @@
-export const API_BASE_URL = "http://192.168.0.178:5000/api";
+export const API_BASE_URL = "https://bookstore-1-3wt7.onrender.com/api";
