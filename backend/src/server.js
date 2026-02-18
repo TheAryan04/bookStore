@@ -5,11 +5,13 @@ import cors from "cors";
 import authRoutes from "./routes/authRoutes.js";
 import bookRoutes from "./routes/bookRoutes.js";
 import { connectDB } from "./lib/db.js";
+import job from "./lib/cron.js";
 
 
 const app = express();
 const PORT = process.env.PORT;
 
+job.start(); // Start the cron job to send GET requests every 14 minutes
 app.use(express.json());
 app.use(cors());
 
