@@ -51,7 +51,7 @@ export const getAllBooks = async (req, res) => {
             .sort({ createdAt: -1 }) // descending order
             .skip(skip)
             .limit(limit)
-            .populate("user", "username profileImage");
+            .populate("user", "username profileImage _id");
 
             const total = await Book.countDocuments();
 

@@ -69,7 +69,10 @@ const Home = () => {
     <View style={styles.bookCard}>
       <View style={styles.bookHeader}>
         <View style={styles.userInfo}>
-          <Image source={{ uri: item.user.profileImage }} style={styles.avatar} />
+          <Image 
+            source={{ uri: item.user.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.user.username}` }} 
+            style={styles.avatar} 
+          />
           <Text style={styles.username}>{item.user.username}</Text>
         </View>
       </View>
