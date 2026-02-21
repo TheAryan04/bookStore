@@ -10,6 +10,9 @@ import { API_BASE_URL } from '../../constants/api';
 
 const Create = () => {
   const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [price, setPrice] = useState("");
+  const [publishedDate, setPublishedDate] = useState("");
   const [caption, setCaption] = useState("");
   const [rating, setRating] = useState(3);
   const [image, setImage] = useState(null);
@@ -59,7 +62,7 @@ const Create = () => {
   }
 
   const handleSubmit = async () => {
-    if (!title || !caption || !imageBase64 || !rating) {
+    if (!title || !author || !price || !publishedDate || !caption || !imageBase64 || !rating) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
@@ -76,6 +79,9 @@ const Create = () => {
       const formData = new FormData();
 
       formData.append("title", title);
+      formData.append("author", author);
+      formData.append("price", price.toString());
+      formData.append("publishedDate", publishedDate);
       formData.append("caption", caption);
       formData.append("rating", rating.toString());
 
@@ -102,6 +108,9 @@ const Create = () => {
 
       Alert.alert("Success", "Your book recommendation has been posted!");
       setTitle("");
+      setAuthor("");
+      setPrice("");
+      setPublishedDate("");
       setCaption("");
       setRating(3);
       setImage(null);
@@ -143,6 +152,30 @@ const Create = () => {
               <View style={styles.inputContainer}>
                 <Ionicons name="book-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
                 <TextInput style={styles.input} placeholder="Enter book title" placeholderTextColor={COLORS.placeholderText} value={title} onChangeText={setTitle} />
+              </View>
+            </View>
+            {/* AUTHOR */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Author</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="person-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+                <TextInput style={styles.input} placeholder="Enter author name" placeholderTextColor={COLORS.placeholderText} value={author} onChangeText={setAuthor} />
+              </View>
+            </View>
+            {/* PRICE */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Price ($)</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="pricetag-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+                <TextInput style={styles.input} placeholder="Enter price" placeholderTextColor={COLORS.placeholderText} value={price} onChangeText={setPrice} keyboardType="decimal-pad" />
+              </View>
+            </View>
+            {/* PUBLISHED DATE */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Published Date (YYYY-MM-DD)</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="calendar-outline" size={20} color={COLORS.textSecondary} style={styles.inputIcon} />
+                <TextInput style={styles.input} placeholder="e.g., 2023-01-15" placeholderTextColor={COLORS.placeholderText} value={publishedDate} onChangeText={setPublishedDate} />
               </View>
             </View>
             {/* RATING */}

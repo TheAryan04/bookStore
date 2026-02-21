@@ -3,9 +3,9 @@ import Book from "../models/Books.js";
 
 export const createBookPost = async (req, res) => {
     try {
-        const { title, caption, rating } = req.body;
+        const { title, author, price, publishedDate, caption, rating } = req.body;
         
-        if(!title || !caption || !rating || !req.file) return res.status(400).json({
+        if(!title || !author || !price || !publishedDate || !caption || !rating || !req.file) return res.status(400).json({
             message: "Please provide all fields"
         });
 
@@ -18,6 +18,9 @@ export const createBookPost = async (req, res) => {
 
         const newBook = new Book({
             title,
+            author,
+            price,
+            publishedDate,
             caption,
             rating,
             image: imageUrl,
