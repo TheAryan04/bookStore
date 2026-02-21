@@ -1,4 +1,4 @@
-import { View, Text, FlatList, Image, ActivityIndicator, RefreshControl } from 'react-native'
+import { View, Text, FlatList, Image, ActivityIndicator, RefreshControl, TouchableOpacity } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { Ionicons } from "@expo/vector-icons";
@@ -12,12 +12,13 @@ import Loader from '../../components/Loader';
 export const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const Home = () => {
-  const { token } = useAuthStore();
+  const { token, logout } = useAuthStore();
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [failedImages, setFailedImages] = useState(new Set());
 
   const fetchBooks = async (pageNum = 1, refresh = false) => {
     try {
@@ -65,15 +66,40 @@ const Home = () => {
     }
   };
 
+  const handleImageError = (userId) => {
+    setFailedImages(prev => new Set([...prev, userId]));
+    console.log("Failed to load profile image for user:", userId);
+  };
+
+  const renderProfileImage = (item) => {
+    const hasFailedImage = failedImages.has(item.user._id);
+    
+    if (hasFailedImage) {
+      return (
+        <View style={[styles.avatar, { backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={{ color: COLORS.white, fontWeight: 'bold', fontSize: 16 }}>
+            {item.user.username?.charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <Image 
+        source={{ uri: item.user.profileImage }} 
+        style={styles.avatar}
+        onError={() => handleImageError(item.user._id)}
+        onLoadStart={() => console.log("Loading image for:", item.user.username)}
+        onLoad={() => console.log("Loaded image for:", item.user.username)}
+      />
+    );
+  };
+
   const renderItem = ({ item }) => (
     <View style={styles.bookCard}>
       <View style={styles.bookHeader}>
         <View style={styles.userInfo}>
-          <Image 
-            source={{ uri: item.user.profileImage }} 
-            style={styles.avatar}
-            onError={(e) => console.log("Image load error:", e)}
-          />
+          {renderProfileImage(item)}
           <Text style={styles.username}>{item.user.username}</Text>
         </View>
       </View>
@@ -146,6 +172,7 @@ const Home = () => {
           </View>
         }
       />
+      <TouchableOpacity onPress={logout}><Text>Logout</Text></TouchableOpacity>
     </View>
   );
 }

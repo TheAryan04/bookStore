@@ -33,8 +33,8 @@ export const registerUser = async (req, res) => {
         return res.status(400).json({ message: "Username already exists" });
     }
 
-    // get random avatar
-    const profileImage = `https://api.dicebear.com/7.x/avataaars/png?seed=${username}`;
+    // get random avatar using a simpler/more reliable format
+    const profileImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=random`;
 
     const user = new User({
         email,
