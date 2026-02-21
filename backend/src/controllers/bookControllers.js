@@ -3,13 +3,16 @@ import Book from "../models/Books.js";
 
 export const createBookPost = async (req, res) => {
     try {
-        const { title, caption, rating, image } = req.body;
-        if(!image || !title || !caption || !rating) return res.status(400).json({
+        const { title, caption, rating } = req.body;
+        
+        if(!title || !caption || !rating || !req.file) return res.status(400).json({
             message: "Please provide all fields"
         });
 
-        // Upload image to Cloudinary
-        const uploadResponse = await cloudinary.uploader.upload(image);
+        // Convert buffer to data URI and upload to Cloudinary
+        const b64 = Buffer.from(req.file.buffer).toString("base64");
+        const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+        const uploadResponse = await cloudinary.uploader.upload(dataURI);
         const imageUrl = uploadResponse.secure_url;
         // save to the database
 
