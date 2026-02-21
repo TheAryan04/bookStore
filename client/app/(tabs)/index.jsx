@@ -31,6 +31,8 @@ const Home = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to fetch books");
 
+      console.log("Books data:", JSON.stringify(data.books[0]?.user, null, 2));
+
       // todo fix it later
       // setBooks((prevBooks) => [...prevBooks, ...data.books]);
 
