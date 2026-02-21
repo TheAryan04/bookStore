@@ -34,7 +34,7 @@ export const registerUser = async (req, res) => {
     }
 
     // get random avatar
-    const profileImage = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+    const profileImage = `https://api.dicebear.com/7.x/avataaars/png?seed=${username}`;
 
     const user = new User({
         email,

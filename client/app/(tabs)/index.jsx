@@ -31,8 +31,6 @@ const Home = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Failed to fetch books");
 
-      console.log("Books data:", JSON.stringify(data.books[0]?.user, null, 2));
-
       // todo fix it later
       // setBooks((prevBooks) => [...prevBooks, ...data.books]);
 
@@ -72,8 +70,9 @@ const Home = () => {
       <View style={styles.bookHeader}>
         <View style={styles.userInfo}>
           <Image 
-            source={{ uri: item.user.profileImage || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.user.username}` }} 
-            style={styles.avatar} 
+            source={{ uri: item.user.profileImage }} 
+            style={styles.avatar}
+            onError={(e) => console.log("Image load error:", e)}
           />
           <Text style={styles.username}>{item.user.username}</Text>
         </View>
