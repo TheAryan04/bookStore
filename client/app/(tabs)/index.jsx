@@ -47,7 +47,7 @@ const Home = () => {
       setHasMore(pageNum < data.totalPages);
       setPage(pageNum);
     } catch (error) {
-      console.log("Error fetching books", error);
+      // Error fetching books
     } finally {
       if (refresh) {
         await sleep(800);
@@ -68,7 +68,6 @@ const Home = () => {
 
   const handleImageError = (userId) => {
     setFailedImages(prev => new Set([...prev, userId]));
-    console.log("Failed to load profile image for user:", userId);
   };
 
   const renderProfileImage = (item) => {
@@ -89,8 +88,6 @@ const Home = () => {
         source={{ uri: item.user.profileImage }} 
         style={styles.avatar}
         onError={() => handleImageError(item.user._id)}
-        onLoadStart={() => console.log("Loading image for:", item.user.username)}
-        onLoad={() => console.log("Loaded image for:", item.user.username)}
       />
     );
   };
