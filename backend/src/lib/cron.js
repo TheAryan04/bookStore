@@ -19,12 +19,51 @@ const job = new cron.CronJob("*/14 * * * *", () => {
     }
 
     const client = parsed.protocol === 'http:' ? http : https;
-    client
-        .get(apiUrl, (res) => {
-            if (res.statusCode === 200) console.log("GET request successfully");
-            else console.log("GET request failed with status code:", res.statusCode);
-        })
-        .on("error", (e) => console.error("Error making GET request:", e));
+    const maxAttempts = 2;
+    const requestTimeoutMs = 5000;
+
+    const doRequest = (attempt = 1) => {
+        const start = Date.now();
+        const req = client.get(apiUrl, (res) => {
+            const { statusCode } = res;
+            if (statusCode >= 200 && statusCode < 300) {
+                console.log(`[cron] GET ${apiUrl} succeeded (${statusCode}) in ${Date.now() - start}ms`);
+            } else if (statusCode >= 300 && statusCode < 400 && res.headers.location) {
+                const location = res.headers.location;
+                console.log(`[cron] GET ${apiUrl} redirected to ${location} (status ${statusCode})`);
+                if (attempt < maxAttempts) {
+                    setTimeout(() => doRequest(attempt + 1), 500);
+                }
+            } else {
+                console.warn(`[cron] GET ${apiUrl} failed with status ${statusCode}`);
+                if (attempt < maxAttempts) {
+                    setTimeout(() => doRequest(attempt + 1), 500 * attempt);
+                }
+            }
+
+            // consume response to free socket
+            res.on('data', () => {});
+            res.on('end', () => {});
+        });
+
+        req.on('error', (e) => {
+            console.error(`[cron] Error making GET request (attempt ${attempt}):`, e.message || e);
+            if (attempt < maxAttempts) {
+                setTimeout(() => doRequest(attempt + 1), 500 * attempt);
+            }
+        });
+
+        req.setTimeout(requestTimeoutMs, () => {
+            req.abort();
+            console.error(`[cron] GET ${apiUrl} timed out after ${requestTimeoutMs}ms (attempt ${attempt})`);
+        });
+    };
+
+    try {
+        doRequest();
+    } catch (err) {
+        console.error('[cron] Unhandled error in scheduled GET:', err);
+    }
 });
 
 export default job;
