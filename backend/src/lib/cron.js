@@ -1,9 +1,26 @@
 import cron from "cron";
 import https from "https";
+import http from "http";
+import { URL } from "url";
 
 const job = new cron.CronJob("*/14 * * * *", () => {
-    https
-        .get(process.env.API_URL, (res) => {
+    const apiUrl = process.env.API_URL;
+    if (!apiUrl) {
+        console.log('API_URL not set; skipping scheduled GET request.');
+        return;
+    }
+
+    let parsed;
+    try {
+        parsed = new URL(apiUrl);
+    } catch (err) {
+        console.error('Invalid API_URL:', apiUrl);
+        return;
+    }
+
+    const client = parsed.protocol === 'http:' ? http : https;
+    client
+        .get(apiUrl, (res) => {
             if (res.statusCode === 200) console.log("GET request successfully");
             else console.log("GET request failed with status code:", res.statusCode);
         })
