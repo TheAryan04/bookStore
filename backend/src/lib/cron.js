@@ -4,9 +4,14 @@ import http from "http";
 import { URL } from "url";
 
 const job = new cron.CronJob("*/14 * * * *", () => {
+    if (process.env.DISABLE_CRON === 'true') {
+        console.log('[cron] Cron disabled via DISABLE_CRON=true');
+        return;
+    }
+
     const apiUrl = process.env.API_URL;
     if (!apiUrl) {
-        console.log('API_URL not set; skipping scheduled GET request.');
+        console.log('[cron] API_URL not set; skipping scheduled GET request.');
         return;
     }
 
@@ -18,51 +23,93 @@ const job = new cron.CronJob("*/14 * * * *", () => {
         return;
     }
 
-    const client = parsed.protocol === 'http:' ? http : https;
-    const maxAttempts = 2;
-    const requestTimeoutMs = 5000;
+    const clientFor = (p) => (p === 'http:' ? http : https);
+    const maxAttempts = parseInt(process.env.CRON_MAX_ATTEMPTS, 10) || 3;
+    const requestTimeoutMs = parseInt(process.env.CRON_REQUEST_TIMEOUT_MS, 10) || 5000;
+    const redirectLimit = parseInt(process.env.CRON_REDIRECT_LIMIT, 10) || 3;
+    const baseDelayMs = 500;
 
-    const doRequest = (attempt = 1) => {
+    // prevent overlapping runs
+    if (job._running) {
+        console.log('[cron] Previous job still running; skipping this scheduled run.');
+        return;
+    }
+
+    job._running = true;
+
+    const isoNow = () => new Date().toISOString();
+
+    const backoffDelay = (attempt) => {
+        const expo = baseDelayMs * 2 ** (attempt - 1);
+        const jitter = Math.floor(Math.random() * 300);
+        return expo + jitter;
+    };
+
+    const doRequest = (url, attempt = 1, redirects = 0) => {
+        const parsedUrl = new URL(url);
+        const client = clientFor(parsedUrl.protocol);
         const start = Date.now();
-        const req = client.get(apiUrl, (res) => {
+
+        const req = client.get(url, (res) => {
             const { statusCode } = res;
             if (statusCode >= 200 && statusCode < 300) {
-                console.log(`[cron] GET ${apiUrl} succeeded (${statusCode}) in ${Date.now() - start}ms`);
+                console.log(`${isoNow()} [cron] GET ${url} succeeded (${statusCode}) in ${Date.now() - start}ms`);
+                job._running = false;
             } else if (statusCode >= 300 && statusCode < 400 && res.headers.location) {
                 const location = res.headers.location;
-                console.log(`[cron] GET ${apiUrl} redirected to ${location} (status ${statusCode})`);
-                if (attempt < maxAttempts) {
-                    setTimeout(() => doRequest(attempt + 1), 500);
+                console.log(`${isoNow()} [cron] GET ${url} redirected to ${location} (status ${statusCode})`);
+                if (redirects < redirectLimit) {
+                    // follow redirect
+                    setImmediate(() => doRequest(new URL(location, url).toString(), 1, redirects + 1));
+                } else {
+                    console.warn(`${isoNow()} [cron] Redirect limit reached for ${url}`);
+                    job._running = false;
                 }
             } else {
-                console.warn(`[cron] GET ${apiUrl} failed with status ${statusCode}`);
+                console.warn(`${isoNow()} [cron] GET ${url} failed with status ${statusCode}`);
+                // retry logic
                 if (attempt < maxAttempts) {
-                    setTimeout(() => doRequest(attempt + 1), 500 * attempt);
+                    const delay = backoffDelay(attempt);
+                    console.log(`${isoNow()} [cron] Retrying ${url} in ${delay}ms (attempt ${attempt + 1})`);
+                    setTimeout(() => doRequest(url, attempt + 1, redirects), delay);
+                } else {
+                    console.error(`${isoNow()} [cron] GET ${url} failed after ${attempt} attempts`);
+                    job._running = false;
                 }
             }
 
-            // consume response to free socket
             res.on('data', () => {});
             res.on('end', () => {});
         });
 
         req.on('error', (e) => {
-            console.error(`[cron] Error making GET request (attempt ${attempt}):`, e.message || e);
+            console.error(`${isoNow()} [cron] Error making GET request to ${url} (attempt ${attempt}):`, e.message || e);
             if (attempt < maxAttempts) {
-                setTimeout(() => doRequest(attempt + 1), 500 * attempt);
+                const delay = backoffDelay(attempt);
+                setTimeout(() => doRequest(url, attempt + 1, redirects), delay);
+            } else {
+                console.error(`${isoNow()} [cron] Request to ${url} failed after ${attempt} attempts`);
+                job._running = false;
             }
         });
 
         req.setTimeout(requestTimeoutMs, () => {
             req.abort();
-            console.error(`[cron] GET ${apiUrl} timed out after ${requestTimeoutMs}ms (attempt ${attempt})`);
+            console.error(`${isoNow()} [cron] GET ${url} timed out after ${requestTimeoutMs}ms (attempt ${attempt})`);
+            if (attempt < maxAttempts) {
+                const delay = backoffDelay(attempt);
+                setTimeout(() => doRequest(url, attempt + 1, redirects), delay);
+            } else {
+                job._running = false;
+            }
         });
     };
 
     try {
-        doRequest();
+        doRequest(apiUrl);
     } catch (err) {
         console.error('[cron] Unhandled error in scheduled GET:', err);
+        job._running = false;
     }
 });
 
